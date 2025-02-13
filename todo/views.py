@@ -5,13 +5,20 @@ from .serializers import TaskSerializer, CategorySerializer
 from rest_framework import permissions
 from rest_framework.decorators import action
 
+class IsOwner(permissions.BasePermission):
+    def has_object_permission(self, request, view, obj):
+        return obj.user == request.user
+
 class CategoryViewSet(ModelViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsOwner]
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+
+    def get_queryset(self):
+        return self.queryset.filter(user=self.request.user)
 
 
     @action(detail=False, methods=['GET'])
@@ -24,7 +31,10 @@ class CategoryViewSet(ModelViewSet):
 class TaskViewSet(ModelViewSet):
     queryset = Task.objects.all()
     serializer_class = TaskSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsOwner]
+
+    def get_queryset(self):
+        return self.queryset.filter(user=self.request.user)
 
     @action(detail=False, methods=['GET'])
     def user_tasks(self, request):
